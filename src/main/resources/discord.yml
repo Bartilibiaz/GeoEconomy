@@ -1,0 +1,6 @@
+bot_token: "enter your bot token here"
+guild_id: "enter your server ID here"
+messages:
+  link_code: "Twój kod łączenia to: **%code%**. Wyślij go w wiadomości prywatnej do naszego bota!"
+  link_success: "Pomyślnie połączono konto Minecraft **%player%** z Discordem!"
+  alert_triggered: "📉 **ALERT CENOWY!** Cena **%item%** spadła do **%price%$**! (Twój cel: %target%$)"

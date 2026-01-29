@@ -1,0 +1,37 @@
+prefix: "&8[&aGeoEconomy&8] "
+
+gui:
+  main_title: "&8Global Markets"
+  category_prefix: "&8Market: &1"
+  profile_title: "&e👤 Your Profile / Wallet"
+  profile_lore:
+    - "&7Click to manage"
+    - "&7your investments."
+  back: "&cBack"
+  item:
+    buy_price: "&a⬇ BUY: &f%price% $"
+    sell_price: "&c⬆ SELL: &f%price% $"
+    click_info:
+      - " "
+      - "&eLMB &7- Buy 1"
+      - "&eRMB &7- Sell 1"
+      - "&6Shift+LMB &7- Buy 64"
+      - "&6Shift+RMB &7- Sell 64"
+    trend_24h: "%color%%symbol% %val% $ (%pct%%) in 24h"
+    trend_1h: "%color%%symbol% %val% $ (%pct%%) in 1h"
+
+messages:
+  bought: "&aBought %amount%x %item% for %price%"
+  sold: "&eSold %amount%x %item% for %price%"
+  no_money: "&cNot enough money!"
+  inventory_full: "&cInventory full! Items dropped."
+  not_enough_items: "&cYou don't have enough items!"
+  reload_success: "&aPlugin reloaded successfully!"
+  no_permission: "&cNo permission!"
+
+discord:
+  link_info:
+    - "&8[&bDiscord&8] &7Linking process:"
+    - "&7Your code: &e&l%code%"
+  link_success: "&aLinked with account: %user%"
+  alert_msg: "📉 **PRICE ALERT!**\nItem: **%item%**\nPrice: **%price%$**"

@@ -1,0 +1,61 @@
+categories:
+  zasoby:
+    name: "&b💎 Zasoby"
+    icon: DIAMOND
+    slot: 10
+    items:
+      DIAMOND:
+        price: 100.0
+        change_percent: 0.1
+        sell_ratio: 0.95
+      GOLD_INGOT:
+        price: 50.0
+        change_percent: 0.05
+      IRON_INGOT:
+        price: 10.0
+        change_percent: 0.01
+      COAL:
+        price: 5.0
+        change_percent: 0.01
+
+  jedzenie:
+    name: "&e🍖 Jedzenie"
+    icon: COOKED_BEEF
+    slot: 12
+    items:
+      COOKED_BEEF:
+        price: 8.0
+        change_percent: 0.05
+      BREAD:
+        price: 5.0
+        change_percent: 0.02
+      GOLDEN_APPLE:
+        price: 500.0
+        change_percent: 1.0
+
+  bloki:
+    name: "&7🧱 Bloki"
+    icon: BRICKS
+    slot: 14
+    items:
+      STONE:
+        price: 1.0
+        change_percent: 0.001
+      OAK_LOG:
+        price: 4.0
+        change_percent: 0.01
+      GLASS:
+        price: 2.0
+        change_percent: 0.01
+
+  rosliny:
+    name: "&a🌻 Rośliny"
+    icon: SUNFLOWER
+    slot: 16
+    items:
+      OAK_SAPLING:
+        price: 10.0
+        change_percent: 0.1
+      WHEAT_SEEDS:
+        price: 0.5
+        change_percent: 0.0

@@ -1,0 +1,37 @@
+# ==========================================
+#      Konfiguracja GeoEconomy
+# ==========================================
+settings:
+  language: pl # Zmień na 'en' aby mieć angielski
+
+economy:
+  # Ile pieniędzy dostaje nowy gracz na start?
+  starting_balance: 100.0
+  # Symbol waluty (używany w wiadomościach)
+  currency_symbol: "$"
+
+# --- Ustawienia Rynku ---
+market:
+  # Co ile sekund zapisywać historię cen?
+  # 3600 = 1 godzina (Standard)
+  # 60 = 1 minuta (Dobre do testów)
+  history_interval: 3600
+
+  # Domyślna marża (jeśli nie ustawiono w market.yml)
+  # 0.9 oznacza, że cena skupu to 90% ceny sprzedaży
+  default_sell_ratio: 0.9
+
+# --- Ustawienia Strony WWW ---
+web:
+  enabled: true
+  # Port, na którym działa strona z wykresami
+  # Pamiętaj, aby odblokować ten port na hostingu/firewallu!
+  port: 8081
+
+# --- Wiadomości ---
+messages:
+  prefix: "&8[&aGeoEconomy&8] "
+  not_enough_money: "&cNie masz wystarczająco pieniędzy!"
+  inventory_full: "&cEkwipunek pełny! Część przedmiotów wypadła."
+  bought: "&aKupiono %amount%x %item% za %price%"
+  sold: "&eSprzedano %amount%x %item% za %price%"

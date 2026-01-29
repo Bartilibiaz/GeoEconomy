@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Giełda GeoEconomy - Dashboard</title>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Tailwind CSS (dla szybkiego i ładnego stylowania) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome (ikony) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        gray: {
+                            850: '#1f2937',
+                            900: '#111827',
+                            950: '#0b0f19',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Custom scrollbar dla listy */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1f2937;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #4b5563;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #6b7280;
+        }
+
+        .item-card.active {
+            background-color: #374151; /* bg-gray-700 */
+            border-left: 4px solid #10b981; /* emerald-500 */
+        }
+    </style>
+</head>
+<body class="bg-gray-950 text-gray-100 font-sans h-screen flex overflow-hidden">
+
+<!-- Sidebar: Lista przedmiotów -->
+<aside class="w-1/3 max-w-sm flex flex-col bg-gray-900 border-r border-gray-800 h-full">
+    <div class="p-5 border-b border-gray-800 flex items-center gap-3">
+        <i class="fa-solid fa-chart-line text-green-500 text-2xl"></i>
+        <h1 class="text-xl font-bold tracking-wide">GeoEconomy</h1>
+    </div>
+
+    <!-- Wyszukiwarka (opcjonalnie) -->
+    <div class="p-4">
+        <div class="relative">
+            <i class="fa-solid fa-search absolute left-3 top-3 text-gray-500"></i>
+            <input type="text" placeholder="Szukaj przedmiotu..." class="w-full bg-gray-850 text-sm rounded-lg pl-10 pr-4 py-2 focus:outline-none focus:ring-2 focus:ring-green-600 border border-gray-700">
+        </div>
+    </div>
+
+    <!-- Lista -->
+    <div id="itemList" class="flex-1 overflow-y-auto">
+        <!-- Tutaj JavaScript wstawi elementy -->
+        <div class="text-center py-10 text-gray-500">Ładowanie danych...</div>
+    </div>
+</aside>
+
+<!-- Główna sekcja: Wykres i szczegóły -->
+<main class="flex-1 flex flex-col h-full relative">
+    <!-- Header wybranego przedmiotu -->
+    <header class="p-6 border-b border-gray-800 flex justify-between items-end bg-gray-900/50 backdrop-blur-sm">
+        <div>
+            <div class="flex items-center gap-3 mb-1">
+                <div id="mainIcon" class="w-10 h-10 rounded bg-gray-800 flex items-center justify-center text-xl text-yellow-500">
+                    <i class="fa-solid fa-cube"></i>
+                </div>
+                <h2 id="mainTitle" class="text-3xl font-bold text-white">Wybierz przedmiot</h2>
+            </div>
+            <p class="text-gray-400 text-sm">Ostatnia aktualizacja: <span id="lastUpdate">--:--</span></p>
+        </div>
+        <div class="text-right">
+            <div id="mainPrice" class="text-4xl font-mono font-bold text-white">-- $</div>
+            <div id="mainChange" class="text-lg font-medium">--</div>
+        </div>
+    </header>
+
+    <!-- Kontener Wykresu -->
+    <div class="flex-1 p-6 flex flex-col min-h-0">
+        <div class="bg-gray-900 rounded-xl border border-gray-800 p-4 shadow-2xl h-full w-full relative">
+            <canvas id="marketChart"></canvas>
+        </div>
+    </div>
+</main>
+
+<script>
+    // --- KONFIGURACJA ---
+    const USE_MOCK_DATA = false; // Zmień na false, aby używać prawdziwego API '/api/data'
+    const REFRESH_RATE = 60000; // 60 sekund
+
+    // Mapowanie ikon do nazw przedmiotów (możesz rozszerzyć)
+    const itemIcons = {
+        'Złoto': 'fa-coins',
+        'Diament': 'fa-gem',
+        'Ropa': 'fa-oil-well',
+        'Stal': 'fa-industry',
+        'Drewno': 'fa-tree',
+        'Węgiel': 'fa-fire',
+        'Jedzenie': 'fa-utensils',
+        'Elektronika': 'fa-microchip',
+        'Bitcoin': 'fa-bitcoin'
+    };
+
+    // --- ZMIENNE STANU ---
+    let marketData = {};
+    let selectedItemKey = null;
+    let myChart = null;
+
+    // --- FUNKCJA GENERUJĄCA DANE TESTOWE (Gdy API nie działa) ---
+    function generateMockData() {
+        const items = ['Złoto', 'Ropa', 'Diament', 'Stal', 'Elektronika', 'Węgiel'];
+        const mock = {};
+
+        items.forEach(item => {
+            let currentPrice = Math.random() * 500 + 50;
+            let history = [];
+            // Generuj historię 24h
+            for (let i = 0; i < 24; i++) {
+                history.push(currentPrice);
+                // Losowa zmiana ceny symulująca rynek
+                let change = (Math.random() - 0.5) * (currentPrice * 0.1);
+                currentPrice += change;
+                if(currentPrice < 1) currentPrice = 1;
+            }
+            history.reverse(); // Najnowsze na końcu
+
+            mock[item] = {
+                price: history[history.length - 1],
+                history: history
+            };
+        });
+        return mock;
+    }
+
+    // --- POBIERANIE DANYCH ---
+    async function fetchData() {
+        try {
+            if (USE_MOCK_DATA) {
+                console.log("Używam danych testowych...");
+                marketData = generateMockData();
+            } else {
+                const response = await fetch('/api/data');
+                marketData = await response.json();
+            }
+
+            renderSidebar();
+
+            // Jeśli nic nie jest wybrane, wybierz pierwszy element
+            if (!selectedItemKey && Object.keys(marketData).length > 0) {
+                selectItem(Object.keys(marketData)[0]);
+            } else if (selectedItemKey && marketData[selectedItemKey]) {
+                // Jeśli coś jest wybrane, odśwież widok tego przedmiotu
+                updateMainView();
+            }
+
+            // Aktualizacja czasu
+            const now = new Date();
+            document.getElementById('lastUpdate').innerText = now.toLocaleTimeString();
+
+        } catch (error) {
+            console.error("Błąd danych:", error);
+            document.getElementById('itemList').innerHTML = `<div class="p-4 text-red-500 text-center">Błąd połączenia z API</div>`;
+        }
+    }
+
+    // --- OBLICZANIE ZMIANY ---
+    function calculateChange(history) {
+        if (!history || history.length < 2) return { diff: 0, percent: 0 };
+        const current = history[history.length - 1];
+        const previous = history[history.length - 2];
+        const diff = current - previous;
+        const percent = (diff / previous) * 100;
+        return { diff, percent, current };
+    }
+
+    // --- RENDEROWANIE SIDEBARA ---
+    function renderSidebar() {
+        const listContainer = document.getElementById('itemList');
+        listContainer.innerHTML = '';
+
+        Object.keys(marketData).forEach(key => {
+            const item = marketData[key];
+            const { diff, percent } = calculateChange(item.history);
+
+            // Ustalanie kolorów
+            const isPositive = diff >= 0;
+            const colorClass = isPositive ? 'text-green-400' : 'text-red-400';
+            const sign = isPositive ? '+' : '';
+            const iconClass = itemIcons[key] || 'fa-box-open'; // Domyślna ikona
+
+            const el = document.createElement('div');
+            el.className = `item-card p-4 border-b border-gray-800 cursor-pointer hover:bg-gray-800 transition-colors flex justify-between items-center ${key === selectedItemKey ? 'active' : ''}`;
+            el.onclick = () => selectItem(key);
+
+            el.innerHTML = `
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 rounded bg-gray-700 flex items-center justify-center text-gray-300">
+                        <i class="fa-solid ${iconClass}"></i>
+                    </div>
+                    <div>
+                        <div class="font-bold text-sm">${key}</div>
+                        <div class="text-xs text-gray-500">Vol: High</div>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <div class="font-mono font-bold">${item.price.toFixed(2)} $</div>
+                    <div class="text-xs ${colorClass}">
+                        ${sign}${diff.toFixed(2)} $ (${sign}${percent.toFixed(2)}%)
+                    </div>
+                </div>
+            `;
+            listContainer.appendChild(el);
+        });
+    }
+
+    // --- WYBÓR PRZEDMIOTU ---
+    function selectItem(key) {
+        selectedItemKey = key;
+        renderSidebar(); // Przerysowuje, aby zaktualizować klasę .active
+        updateMainView();
+    }
+
+    // --- AKTUALIZACJA GŁÓWNEGO WIDOKU ---
+    function updateMainView() {
+        if (!selectedItemKey || !marketData[selectedItemKey]) return;
+
+        const data = marketData[selectedItemKey];
+        const { diff, percent } = calculateChange(data.history);
+        const isPositive = diff >= 0;
+
+        // Ikona i Tytuł
+        document.getElementById('mainTitle').innerText = selectedItemKey;
+        const iconClass = itemIcons[selectedItemKey] || 'fa-box-open';
+        document.getElementById('mainIcon').innerHTML = `<i class="fa-solid ${iconClass}"></i>`;
+
+        // Cena i Zmiana
+        document.getElementById('mainPrice').innerText = `${data.price.toFixed(2)} $`;
+        const changeEl = document.getElementById('mainChange');
+        changeEl.className = `text-lg font-medium ${isPositive ? 'text-green-500' : 'text-red-500'}`;
+        changeEl.innerHTML = `
+            <i class="fa-solid ${isPositive ? 'fa-arrow-trend-up' : 'fa-arrow-trend-down'}"></i>
+            ${isPositive ? '+' : ''}${diff.toFixed(2)} $ (${isPositive ? '+' : ''}${percent.toFixed(2)}%)
+        `;
+
+        renderChart(selectedItemKey, data.history, isPositive);
+    }
+
+    // --- RENDEROWANIE WYKRESU (Chart.js) ---
+    function renderChart(label, dataPoints, isPositive) {
+        const ctx = document.getElementById('marketChart').getContext('2d');
+
+        // Generowanie etykiet czasu (np. -23h, -22h...)
+        const labels = dataPoints.map((_, i) => {
+            const hoursAgo = dataPoints.length - 1 - i;
+            return hoursAgo === 0 ? 'Teraz' : `-${hoursAgo}h`;
+        });
+
+        // Kolory wykresu zależne od trendu
+        const mainColor = isPositive ? '#10b981' : '#ef4444'; // Green vs Red
+        const bgGradient = ctx.createLinearGradient(0, 0, 0, 400);
+        bgGradient.addColorStop(0, isPositive ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)');
+        bgGradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+
+        if (myChart) {
+            myChart.destroy();
+        }
+
+        myChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: `Cena ${label}`,
+                    data: dataPoints,
+                    borderColor: mainColor,
+                    backgroundColor: bgGradient,
+                    borderWidth: 3,
+                    pointRadius: 0, // Ukryj punkty dla czystszego wyglądu
+                    pointHoverRadius: 6,
+                    fill: true,
+                    tension: 0.4 // Gładka krzywa
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    mode: 'index',
+                    intersect: false,
+                },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: 'rgba(17, 24, 39, 0.9)',
+                        titleColor: '#fff',
+                        bodyColor: '#fff',
+                        borderColor: '#374151',
+                        borderWidth: 1,
+                        padding: 10,
+                        displayColors: false,
+                        callbacks: {
+                            label: function(context) {
+                                return context.parsed.y.toFixed(2) + ' $';
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: { color: '#374151', drawBorder: false },
+                        ticks: { color: '#9ca3af' }
+                    },
+                    y: {
+                        grid: { color: '#374151', drawBorder: false },
+                        ticks: { color: '#9ca3af' },
+                        beginAtZero: false
+                    }
+                }
+            }
+        });
+    }
+
+    // --- START ---
+    fetchData();
+    setInterval(fetchData, REFRESH_RATE);
+
+</script>
+</body>
+</html>

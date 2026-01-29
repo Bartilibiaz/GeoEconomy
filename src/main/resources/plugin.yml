@@ -1,0 +1,25 @@
+name: GeoEconomy
+version: ${version}
+main: pl.bartilibiaz.GeoEconomyPlugin
+api-version: 1.21
+authors: [Bartilibiaz]
+description: Zaawansowany rynek z dynamicznymi cenami, Discordem i WWW.
+depend: [Vault]
+commands:
+  market:
+    description: Otwiera Market
+    usage: /market [link/alert/reload]
+    aliases: [rynek]
+permissions:
+  geoeconomy.use:
+    description: Pozwala używać rynku i otwierać GUI
+    default: true  # Domyślnie każdy gracz to ma
+  geoeconomy.link:
+    description: Pozwala łączyć konto z Discordem
+    default: true
+  geoeconomy.alert:
+    description: Pozwala ustawiać alerty cenowe
+    default: true
+  geoeconomy.admin:
+    description: Pozwala przeładowywać plugin i zarządzać rynkiem
+    default: op    # Tylko operatorzy to mają

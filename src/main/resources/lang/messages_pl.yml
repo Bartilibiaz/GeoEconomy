@@ -1,0 +1,37 @@
+prefix: "&8[&aGeoEconomy&8] "
+
+gui:
+  main_title: "&8Rynki Światowe"
+  category_prefix: "&8Rynek: &1"
+  profile_title: "&e👤 Twój Profil / Portfel"
+  profile_lore:
+    - "&7Kliknij, aby zarządzać"
+    - "&7swoimi inwestycjami."
+  back: "&cWróć"
+  item:
+    buy_price: "&a⬇ KUPNO: &f%price% $"
+    sell_price: "&c⬆ SPRZEDAŻ: &f%price% $"
+    click_info:
+      - " "
+      - "&eLPM &7- Kup 1 szt."
+      - "&ePPM &7- Sprzedaj 1 szt."
+      - "&6Shift+LPM &7- Kup 64 szt."
+      - "&6Shift+PPM &7- Sprzedaj 64 szt."
+    trend_24h: "%color%%symbol% %val% $ (%pct%%) w 24h"
+    trend_1h: "%color%%symbol% %val% $ (%pct%%) w 1h"
+
+messages:
+  bought: "&aKupiono %amount%x %item% za %price%"
+  sold: "&eSprzedano %amount%x %item% za %price%"
+  no_money: "&cNie masz wystarczająco pieniędzy!"
+  inventory_full: "&cEkwipunek pełny! Część przedmiotów wypadła."
+  not_enough_items: "&cNie posiadasz tylu przedmiotów!"
+  reload_success: "&aPlugin został przeładowany!"
+  no_permission: "&cBrak uprawnień!"
+
+discord:
+  link_info:
+    - "&8[&bDiscord&8] &7Proces łączenia:"
+    - "&7Twój kod: &e&l%code%"
+  link_success: "&aPołączono z kontem: %user%"
+  alert_msg: "📉 **ALERT CENOWY!**\nPrzedmiot: **%item%**\nCena: **%price%$**"

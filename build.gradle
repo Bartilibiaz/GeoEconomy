@@ -1,0 +1,72 @@
+plugins {
+    id 'java'
+    id 'com.github.johnrengelman.shadow' version '8.1.1' // <--- TO JEST KLUCZOWE
+}
+
+group = 'pl.bartilibiaz'
+version = '1.0.0-BETA'
+
+repositories {
+    mavenCentral()
+
+    // Repozytorium Spigota
+    maven { url = 'https://hub.spigotmc.org/nexus/content/repositories/snapshots/' }
+
+    // Repozytorium Sonatype
+    maven { url = 'https://oss.sonatype.org/content/repositories/snapshots' }
+
+    // JitPack (dla Vault API)
+    maven { url = 'https://jitpack.io' }
+}
+
+dependencies {
+    // API Serwera (Tego NIE pakujemy do srodka, serwer to ma)
+    compileOnly 'org.spigotmc:spigot-api:1.20.4-R0.1-SNAPSHOT'
+
+    // Vault API (Tego tez NIE pakujemy, plugin Vault.jar to ma)
+    compileOnly 'com.github.MilkBowl:VaultAPI:1.7'
+
+    // Discord JDA (To MUSIMY spakowac do srodka!)
+    implementation 'net.dv8tion:JDA:5.0.0-beta.20'
+
+    implementation 'org.xerial:sqlite-jdbc:3.42.0.0'
+}
+
+java {
+    toolchain {
+        // Dla MC 1.18 - 1.20.4 uzyj 17. Dla 1.20.5+ uzyj 21.
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+}
+
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+}
+
+// Konfiguracja Shadow (budowania grubego pliku)
+shadowJar {
+    // To zmienia nazwę pliku, żeby nie miał dopisku "-all" (opcjonalne)
+    archiveClassifier.set('')
+
+    // Relokacja biblioteki (Dobra praktyka, zeby nie gryzlo sie z innymi pluginami)
+    // Zamienia paczke "net.dv8tion.jda" na "pl.bartilibiaz.lib.jda" w srodku pluginu
+    relocate 'net.dv8tion.jda', 'pl.bartilibiaz.lib.jda'
+    relocate 'org.json', 'pl.bartilibiaz.lib.json'
+    relocate 'gnu.trove', 'pl.bartilibiaz.lib.trove'
+
+    // Wykluczamy rzeczy, ktorych nie potrzebujemy (opcjonalne, odchudza plik)
+    exclude 'META-INF/*.DSA'
+    exclude 'META-INF/*.RSA'
+}
+
+// Sprawia, ze komenda 'build' automatycznie uruchamia tez 'shadowJar'
+build.dependsOn shadowJar
+
+processResources {
+    def props = [version: version]
+    inputs.properties props
+    filteringCharset = 'UTF-8'
+    filesMatching('plugin.yml') {
+        expand props
+    }
+}
