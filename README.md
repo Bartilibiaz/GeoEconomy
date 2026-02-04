@@ -34,7 +34,7 @@ The plugin features a robust **Investment Portfolio**, allowing players to store
 
 ## 📥 Installation
 
-1.  Download the latest `GeoEconomy-1.0-SNAPSHOT.jar`.
+1.  Download the latest `GeoEconomy-1.0.1.jar`.
 2.  Ensure you have **Vault** and an economy plugin (e.g., EssentialsX) installed.
 3.  Drop the jar into your `plugins` folder.
 4.  Restart the server.
