@@ -50,6 +50,13 @@ public class DatabaseManager {
                     "material VARCHAR(50), " +
                     "amount INT, " +
                     "PRIMARY KEY (uuid, material))");
+            st.execute("CREATE TABLE IF NOT EXISTS market_alerts (" +
+                    "id INTEGER PRIMARY KEY AUTOINCREMENT ," +
+                    "uuid VARCHAR(36) NOT NULL," +
+                    "material VARCHAR(32) NOT NULL," +
+                    "target_price DOUBLE NOT NULL," +
+                    "is_high BOOLEAN NOT NULL," +
+                    "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP)");
 
         } catch (SQLException e) {
             e.printStackTrace();
