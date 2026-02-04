@@ -15,7 +15,7 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-1.0.0--BETA-blue?style=flat-square" alt="Version">
+  <img src="https://img.shields.io/badge/version-1.0.0-blue?style=flat-square" alt="Version">
   <img src="https://img.shields.io/badge/API-Spigot%20%2F%20Paper-orange?style=flat-square" alt="API">
   <img src="https://img.shields.io/badge/Java-17%2B-red?style=flat-square" alt="Java">
 </p>
