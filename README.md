@@ -8,7 +8,7 @@
 
 
 <p align="center">
-  <img src="https://img.shields.io/badge/version-1.0.1-blue?style=flat-square" alt="Version">
+  <img src="https://img.shields.io/badge/version-1.0.2-blue?style=flat-square" alt="Version">
   <img src="https://img.shields.io/badge/API-Spigot%20%2F%20Paper-orange?style=flat-square" alt="API">
   <img src="https://img.shields.io/badge/Java-21%2B-red?style=flat-square" alt="Java">
   <img src="https://img.shields.io/badge/1.21.4%2B-green?style=flat-square" alt="Version">
