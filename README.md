@@ -6,13 +6,6 @@
 
 <h4 align="center">Advanced Dynamic Market System for Minecraft Servers.</h4>
 
-<p align="center">
-  <a href="#key-features">Key Features</a> •
-  <a href="#installation">Installation</a> •
-  <a href="#commands">Commands</a> •
-  <a href="#web-interface">Web Interface</a> •
-  <a href="#discord-integration">Discord</a>
-</p>
 
 <p align="center">
   <img src="https://img.shields.io/badge/version-1.0.0-blue?style=flat-square" alt="Version">
