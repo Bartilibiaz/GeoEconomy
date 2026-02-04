@@ -1,17 +1,22 @@
 package pl.bartilibiaz.utils;
 
-import org.bukkit.ChatColor;
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import pl.bartilibiaz.GeoEconomyPlugin;
 
 import java.io.File;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Set;
 
 public class LanguageManager {
 
     private final GeoEconomyPlugin plugin;
-    private YamlConfiguration langConfig;
+    private FileConfiguration langConfig;
+    private File langFile;
 
     public LanguageManager(GeoEconomyPlugin plugin) {
         this.plugin = plugin;
@@ -19,64 +24,76 @@ public class LanguageManager {
     }
 
     public void loadLanguage() {
-        // 1. Upewnij się, że folder "lang" istnieje na serwerze
-        File langFolder = new File(plugin.getDataFolder(), "lang");
-        if (!langFolder.exists()) {
-            langFolder.mkdirs(); // Tworzy folder plugins/GeoEconomy/lang
-        }
+        String lang = plugin.getConfig().getString("settings.language", "pl");
+        String fileName = "messages_" + lang + ".yml";
 
-        // 2. Zapisz domyślne pliki (jeśli nie istnieją)
-        // Ścieżka w saveResource musi odpowiadać ścieżce w src/main/resources
-        saveDefaultLang("messages_pl.yml");
-        saveDefaultLang("messages_en.yml");
-
-        // 3. Pobierz ustawienie z config.yml
-        String langCode = plugin.getConfig().getString("settings.language", "pl");
-        String fileName = "messages_" + langCode + ".yml";
-
-        // 4. Wczytaj plik z folderu "lang"
-        File langFile = new File(langFolder, fileName);
-
-        // Fallback: Jeśli plik wybranego języka nie istnieje, wczytaj polski
+        langFile = new File(plugin.getDataFolder(), "lang/" + fileName);
         if (!langFile.exists()) {
-            plugin.getLogger().warning("Nie znaleziono pliku: lang/" + fileName + ". Ładowanie domyślnego (PL).");
-            langFile = new File(langFolder, "messages_pl.yml");
+            langFile.getParentFile().mkdirs();
+            plugin.saveResource("lang/" + fileName, false);
         }
 
         langConfig = YamlConfiguration.loadConfiguration(langFile);
-        plugin.getLogger().info("Wczytano plik językowy: lang/" + langFile.getName());
+
+        updateFile(fileName);
     }
 
-    private void saveDefaultLang(String fileName) {
-        // Sprawdzamy, czy plik istnieje w folderze plugins/GeoEconomy/lang/
-        File langFolder = new File(plugin.getDataFolder(), "lang");
-        File file = new File(langFolder, fileName);
+    private void updateFile(String resourceName) {
+        InputStream defStream = plugin.getResource("lang/" + resourceName);
+        if (defStream == null) return;
 
-        if (!file.exists()) {
-            // saveResource szuka pliku w JARze pod ścieżką "lang/nazwa.yml"
-            // i wypakowuje go do "plugins/GeoEconomy/lang/nazwa.yml"
+        YamlConfiguration defConfig = YamlConfiguration.loadConfiguration(new InputStreamReader(defStream, StandardCharsets.UTF_8));
+        boolean changesMade = false;
+
+        Set<String> internalKeys = defConfig.getKeys(true);
+
+        for (String key : internalKeys) {
+            if (!langConfig.contains(key)) {
+                langConfig.set(key, defConfig.get(key));
+                changesMade = true;
+                plugin.getLogger().info("Dodano nowy klucz do " + resourceName + ": " + key);
+            }
+        }
+
+        if (changesMade) {
             try {
-                plugin.saveResource("lang/" + fileName, false);
-            } catch (IllegalArgumentException e) {
-                plugin.getLogger().severe("Błąd: Nie znaleziono pliku 'lang/" + fileName + "' wewnątrz pliku .jar!");
+                langConfig.save(langFile);
+                plugin.getLogger().info("Zaktualizowano plik językowy o nowe wpisy.");
+            } catch (Exception e) {
+                e.printStackTrace();
             }
         }
     }
 
-    // --- Pobieranie tekstów (Bez zmian) ---
-
-    public String getMessage(String key) {
-        if (langConfig == null) return "Error: Lang not loaded";
-        String msg = langConfig.getString(key);
-        if (msg == null) return "Missing key: " + key;
-        return ChatColor.translateAlternateColorCodes('&', msg);
+    public String getMessage(String path) {
+        if (!langConfig.contains(path)) {
+            return "§cMissing key: " + path;
+        }
+        return listToString(langConfig.getStringList(path), langConfig.getString(path));
     }
 
-    public List<String> getMessageList(String key) {
-        if (langConfig == null) return List.of("Error: Lang not loaded");
-        List<String> list = langConfig.getStringList(key);
-        return list.stream()
-                .map(line -> ChatColor.translateAlternateColorCodes('&', line))
-                .collect(Collectors.toList());
+    public List<String> getMessageList(String path) {
+        if (!langConfig.contains(path)) {
+            List<String> err = new ArrayList<>();
+            err.add("§cMissing key: " + path);
+            return err;
+        }
+        List<String> list = langConfig.getStringList(path);
+        List<String> colored = new ArrayList<>();
+        for (String s : list) {
+            colored.add(s.replace("&", "§"));
+        }
+        return colored;
+    }
+
+    private String listToString(List<String> list, String single) {
+        if (list != null && !list.isEmpty()) {
+            StringBuilder sb = new StringBuilder();
+            for (String s : list) {
+                sb.append(s.replace("&", "§")).append("\n");
+            }
+            return sb.toString().trim();
+        }
+        return single != null ? single.replace("&", "§") : "§cError: " + single;
     }
 }

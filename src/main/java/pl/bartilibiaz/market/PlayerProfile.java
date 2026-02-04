@@ -26,7 +26,6 @@ public class PlayerProfile {
         }
     }
 
-    // Ta metoda jest wymagana przez ProfileGUI!
     public void setItem(Material mat, int amount) {
         wallet.put(mat, amount);
     }

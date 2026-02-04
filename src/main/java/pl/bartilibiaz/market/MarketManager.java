@@ -5,7 +5,7 @@ import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.scheduler.BukkitTask; // Import Taska
+import org.bukkit.scheduler.BukkitTask;
 import pl.bartilibiaz.GeoEconomyPlugin;
 
 import java.io.File;
@@ -19,7 +19,7 @@ public class MarketManager {
     private final Map<String, ItemStack> categoryIcons = new LinkedHashMap<>();
     private final Map<String, Integer> categorySlots = new HashMap<>();
 
-    private BukkitTask historyTask; // Uchwyt do zadania, żeby móc je zrestartować
+    private BukkitTask historyTask;
 
     public MarketManager(GeoEconomyPlugin plugin) {
         this.plugin = plugin;
@@ -27,10 +27,9 @@ public class MarketManager {
         startHistoryTask();
     }
 
-    // --- RELOAD ---
     public void reloadMarket() {
-        saveMarket(); // Najpierw zapisz obecny stan (żeby nie stracić cen)
-        loadMarket(); // Wczytaj config na nowo
+        saveMarket();
+        loadMarket();
         plugin.getLogger().info("Przeladowano rynek!");
     }
 
@@ -39,9 +38,8 @@ public class MarketManager {
             historyTask.cancel();
         }
 
-        // Pobieramy sekundy z configu (domyślnie 3600s = 1h)
         int seconds = plugin.getConfig().getInt("market.history_interval", 3600);
-        long period = seconds * 20L; // Zamiana sekund na ticki (1 sekunda = 20 ticków)
+        long period = seconds * 20L;
 
         historyTask = plugin.getServer().getScheduler().runTaskTimer(plugin, () -> {
             plugin.getLogger().info("Aktualizacja historii cen rynkowych...");
@@ -89,13 +87,11 @@ public class MarketManager {
                     double defaultRatio = plugin.getConfig().getDouble("market.default_sell_ratio", 0.9);
                     double sellRatio = itemsSection.getDouble(itemKey + ".sell_ratio", defaultRatio);
 
-                    // Wczytywanie listy Double
                     List<Double> history = itemsSection.getDoubleList(itemKey + ".history");
 
                     Material mat = Material.valueOf(itemKey);
                     MarketItem item = new MarketItem(mat, price, change, sellRatio);
 
-                    // Ustawiamy historię tylko jeśli coś w niej jest
                     if (history != null && !history.isEmpty()) {
                         item.setHistory(history);
                     }
@@ -117,7 +113,6 @@ public class MarketManager {
                 String path = "categories." + catKey + ".items." + item.getMaterial().name();
 
                 config.set(path + ".price", item.getBasePrice());
-                // Zapisujemy listę historii
                 config.set(path + ".history", item.getHistory());
             }
         }
@@ -132,19 +127,17 @@ public class MarketManager {
     public String getCategoryIdByName(String guiDisplayName) {
         String cleanGuiName = org.bukkit.ChatColor.stripColor(guiDisplayName).trim();
 
-        // Przeszukujemy wszystkie załadowane ikony kategorii
         for (Map.Entry<String, org.bukkit.inventory.ItemStack> entry : categoryIcons.entrySet()) {
             if (entry.getValue().getItemMeta() != null) {
                 String iconName = entry.getValue().getItemMeta().getDisplayName();
                 String cleanIconName = org.bukkit.ChatColor.stripColor(iconName).trim();
 
-                // Jeśli nazwa z okna pasuje do nazwy ikony -> Mamy to!
                 if (cleanGuiName.equalsIgnoreCase(cleanIconName)) {
-                    return entry.getKey(); // Zwraca np. "food"
+                    return entry.getKey();
                 }
             }
         }
-        return null; // Nie znaleziono
+        return null;
     }
     public String getCategoryDisplayName(String categoryId) {
         if (categoryIcons.containsKey(categoryId)) {
@@ -153,9 +146,8 @@ public class MarketManager {
                 return icon.getItemMeta().getDisplayName();
             }
         }
-        return categoryId; // Fallback: jeśli nie ma nazwy, zwróć ID
+        return categoryId;
     }
-    // Gettery
     public Map<String, ItemStack> getCategoryIcons() { return categoryIcons; }
     public Integer getCategorySlot(String cat) { return categorySlots.get(cat); }
     public List<MarketItem> getItems(String category) { return categories.getOrDefault(category, new ArrayList<>()); }

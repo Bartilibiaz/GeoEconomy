@@ -37,18 +37,14 @@ public class DatabaseManager {
 
     private void createTables() {
         try (Statement st = connection.createStatement()) {
-            // Tabela 1: Ekonomia (UUID, Kasa)
             st.execute("CREATE TABLE IF NOT EXISTS economy (" +
                     "uuid VARCHAR(36) PRIMARY KEY, " +
                     "balance DOUBLE NOT NULL DEFAULT 0)");
 
-            // Tabela 2: Discord (UUID, DiscordID)
             st.execute("CREATE TABLE IF NOT EXISTS discord_links (" +
                     "uuid VARCHAR(36) PRIMARY KEY, " +
                     "discord_id VARCHAR(20) NOT NULL)");
 
-            // Tabela 3: Portfel Inwestycyjny (UUID, Materiał, Ilość)
-            // Używamy klucza złożonego (UUID + Materiał), żeby jeden gracz miał jeden wpis dla danego surowca
             st.execute("CREATE TABLE IF NOT EXISTS portfolios (" +
                     "uuid VARCHAR(36), " +
                     "material VARCHAR(50), " +
@@ -63,7 +59,7 @@ public class DatabaseManager {
     public Connection getConnection() {
         try {
             if (connection == null || connection.isClosed()) {
-                connect(); // Reconnect
+                connect();
             }
         } catch (SQLException e) {
             e.printStackTrace();

@@ -7,6 +7,18 @@ gui:
   profile_lore:
     - "&7Kliknij, aby zarządzać"
     - "&7swoimi inwestycjami."
+  discord_icon:
+    name: "&9&lDiscord & Integracja"
+    lore:
+      - "&7Połącz swoje konto, aby"
+      - "&7otrzymywać powiadomienia i"
+      - "&7zarządzać alertami z telefonu!"
+      - " "
+      - "&fInstrukcja:"
+      - "&71. Kliknij tutaj, aby dostać kod."
+      - "&72. Wyślij ten kod do naszego bota."
+      - " "
+      - "&eLPM - Pobierz kod łączenia"
   back: "&cWróć"
   item:
     buy_price: "&a⬇ KUPNO: &f%price% $"

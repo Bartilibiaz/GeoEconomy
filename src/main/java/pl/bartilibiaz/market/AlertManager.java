@@ -8,13 +8,12 @@ import java.util.*;
 public class AlertManager {
 
     private final GeoEconomyPlugin plugin;
-    // Klucz: Material -> Lista Alertów
     private final Map<Material, List<PriceAlert>> alerts = new HashMap<>();
 
     public static class PriceAlert {
         public UUID playerUUID;
         public double targetPrice;
-        public boolean isHighAlert; // true = czekamy na wzrost, false = czekamy na spadek
+        public boolean isHighAlert;
 
         public PriceAlert(UUID uuid, double target, boolean isHighAlert) {
             this.playerUUID = uuid;
@@ -27,12 +26,9 @@ public class AlertManager {
         this.plugin = plugin;
     }
 
-    // Dodawanie alertu - określamy kierunek (W górę czy w dół)
     public void addAlert(UUID uuid, Material mat, double targetPrice) {
-        // Musimy pobrać aktualną cenę, żeby wiedzieć w którą stronę czekamy
         double currentPrice = 0.0;
 
-        // Szukamy itemu w managerze, żeby znać cenę startową
         for (List<MarketItem> list : plugin.getMarketManager().getAllItemsValues()) {
             for (MarketItem item : list) {
                 if (item.getMaterial() == mat) {
@@ -42,8 +38,6 @@ public class AlertManager {
             }
         }
 
-        // Jeśli target > current -> czekamy aż urośnie (HighAlert)
-        // Jeśli target < current -> czekamy aż spadnie (LowAlert)
         boolean isHigh = targetPrice > currentPrice;
 
         alerts.computeIfAbsent(mat, k -> new ArrayList<>()).add(new PriceAlert(uuid, targetPrice, isHigh));
@@ -58,12 +52,9 @@ public class AlertManager {
             PriceAlert alert = it.next();
             boolean triggered = false;
 
-            // Logika sprawdzania
             if (alert.isHighAlert) {
-                // Czekaliśmy na wzrost. Czy cena przebiła sufit?
                 if (newPrice >= alert.targetPrice) triggered = true;
             } else {
-                // Czekaliśmy na spadek. Czy cena przebiła podłogę?
                 if (newPrice <= alert.targetPrice) triggered = true;
             }
 
@@ -78,7 +69,7 @@ public class AlertManager {
 
                     plugin.getDiscordManager().sendPrivateMessage(alert.playerUUID, msg);
                 }
-                it.remove(); // Usuwamy alert po wykonaniu
+                it.remove();
             }
         }
     }

@@ -8,7 +8,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.ClickType;
 import org.bukkit.event.inventory.InventoryClickEvent;
-import org.bukkit.event.inventory.InventoryDragEvent; // <--- WAŻNE
+import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -26,7 +26,6 @@ import java.util.HashMap;
 public class MarketGUI implements Listener {
 
     private final GeoEconomyPlugin plugin;
-    // Mapa: UUID -> True (Widok 1h), False (Widok 24h)
     private final Map<UUID, Boolean> playerViewMode = new HashMap<>();
 
     public MarketGUI(GeoEconomyPlugin plugin) {
@@ -56,28 +55,20 @@ public class MarketGUI implements Listener {
     }
 
     public void openCategory(Player player, String categoryId) {
-        // 1. Pobieramy prefix z lang (np. "Rynek: ")
         String prefix = plugin.getLang().getMessage("gui.category_prefix").replace("&1", "");
 
-        // 2. Pobieramy ŁADNĄ nazwę kategorii (np. "&eJedzenie") zamiast ID
         String prettyName = plugin.getMarketManager().getCategoryDisplayName(categoryId);
 
-        // 3. Tworzymy okno z ładną nazwą
-        // WAŻNE: Tytuł musi być zgodny z tym, co potem odczytuje onClick!
         Inventory inv = Bukkit.createInventory(null, 54, prefix + prettyName);
 
         List<MarketItem> items = plugin.getMarketManager().getItems(categoryId);
         boolean is1hMode = playerViewMode.getOrDefault(player.getUniqueId(), false);
-        // ... (reszta metody bez zmian - pętle, itemy, lore) ...
-        // ... SKOPIUJ RESZTĘ SWOJEJ METODY openCategory TUTAJ ...
 
-        // (Dla ułatwienia wklejam kluczowy fragment pętli, żebyś się nie zgubił)
         int slot = 0;
         for (MarketItem item : items) {
             if (slot >= 53) break;
             ItemStack guiItem = new ItemStack(item.getMaterial());
             ItemMeta meta = guiItem.getItemMeta();
-            // ... twoja logika cen ...
             String buyPrice = String.format("%.2f", item.getBuyPrice());
             String sellPrice = String.format("%.2f", item.getSellPrice());
             double changeVal = item.getChangeValue(is1hMode);
@@ -90,13 +81,13 @@ public class MarketGUI implements Listener {
             String trendColor = changeVal >= 0 ? "&a" : "&c";
             String trendSymbol = changeVal >= 0 ? "▲" : "▼";
             if (changeVal > 0) {
-                trendColor = "§a"; // Używamy § zamiast & (Zielony)
+                trendColor = "§a";
                 trendSymbol = "▲";
             } else if (changeVal < 0) {
-                trendColor = "§c"; // Czerwony
+                trendColor = "§c";
                 trendSymbol = "▼";
             } else {
-                trendColor = "§7"; // Szary (brak zmian)
+                trendColor = "§7";
                 trendSymbol = "=";
             }
             String trendFormat = is1hMode
@@ -129,7 +120,6 @@ public class MarketGUI implements Listener {
         player.openInventory(inv);
     }
 
-    // --- NOWE ZABEZPIECZENIE PRZED PRZECIĄGANIEM ---
     @EventHandler
     public void onDrag(InventoryDragEvent e) {
         String title = ChatColor.stripColor(e.getView().getTitle());
@@ -137,7 +127,7 @@ public class MarketGUI implements Listener {
         String catPrefix = ChatColor.stripColor(plugin.getLang().getMessage("gui.category_prefix")).trim();
 
         if (title.equals(mainTitle) || title.startsWith(catPrefix)) {
-            e.setCancelled(true); // Blokuje "rozmazywanie" itemów myszką
+            e.setCancelled(true);
         }
     }
 
@@ -148,33 +138,24 @@ public class MarketGUI implements Listener {
 
         Player player = (Player) e.getWhoClicked();
 
-        // 1. POBIERANIE NAZW (DEBUGOWANIE)
         String rawTitle = e.getView().getTitle();
         String cleanTitle = ChatColor.stripColor(rawTitle).trim();
 
         String cleanMainTitle = ChatColor.stripColor(plugin.getLang().getMessage("gui.main_title")).trim();
 
-        // Tutaj usuwamy "&1" i spacje, żeby mieć czysty prefix "Rynek:"
         String cleanPrefix = ChatColor.stripColor(plugin.getLang().getMessage("gui.category_prefix"))
-                .replace("&1", "") // Usuwamy ewentualny kod koloru ID
-                .trim();           // Usuwamy spacje z brzegów
-
-        // --- DEBUG W KONSOLI (Usuń to, gdy naprawisz problem) ---
-        // System.out.println("[DEBUG GUI] Tytuł okna: '" + cleanTitle + "'");
-        // System.out.println("[DEBUG GUI] Oczekiwany Prefix: '" + cleanPrefix + "'");
-        // --------------------------------------------------------
+                .replace("&1", "")
+                .trim();
 
         boolean isMainMenu = cleanTitle.equals(cleanMainTitle);
         boolean isCategory = cleanTitle.startsWith(cleanPrefix);
 
-        // 2. BLOKADA WYJMOWANIA
         if (isMainMenu || isCategory) {
-            e.setCancelled(true); // <--- TO MUSI ZADZIAŁAĆ
+            e.setCancelled(true);
         } else {
-            return; // To nie nasze okno
+            return;
         }
 
-        // 3. LOGIKA KLIKNIĘCIA
         if (isMainMenu) {
             if (e.getCurrentItem() == null) return;
             if (e.getSlot() == 4) {
@@ -185,34 +166,26 @@ public class MarketGUI implements Listener {
             if (catId != null) openCategory(player, catId);
         }
         else if (isCategory) {
-            // Wyciągamy nazwę kategorii z tytułu
-            // np. Z "Rynek: Jedzenie" wycinamy "Rynek:" i zostaje "Jedzenie"
             String displayCatName = cleanTitle.substring(cleanPrefix.length()).trim();
 
-            // Szukamy ID (np. "food")
             String catId = plugin.getMarketManager().getCategoryIdByName(displayCatName);
 
             if (catId == null) {
-                // Jeśli nie znalazło, to znaczy że nazwy się nie pokrywają
-                // System.out.println("[DEBUG] Nie znaleziono ID dla nazwy: '" + displayCatName + "'");
                 if (plugin.getMarketManager().getItems(displayCatName) != null && !plugin.getMarketManager().getItems(displayCatName).isEmpty()) {
                     catId = displayCatName; }
             }
 
             if (catId == null) {
-                // System.out.println("[DEBUG] Nadal null. Nazwa z tytułu: " + displayCatName);
                 return;
             }
 
             if (e.getCurrentItem() == null) return;
 
-            // Powrót
             if (e.getSlot() == 53 && e.getCurrentItem().getType() == Material.ARROW) {
                 openMainMenu(player);
                 return;
             }
 
-            // Middle Click
             if (e.getClick() == ClickType.MIDDLE) {
                 boolean current = playerViewMode.getOrDefault(player.getUniqueId(), false);
                 playerViewMode.put(player.getUniqueId(), !current);
@@ -220,7 +193,6 @@ public class MarketGUI implements Listener {
                 return;
             }
 
-            // Transakcja
             List<MarketItem> items = plugin.getMarketManager().getItems(catId);
             if (e.getSlot() < items.size()) {
                 MarketItem item = items.get(e.getSlot());
@@ -246,7 +218,6 @@ public class MarketGUI implements Listener {
                     for (ItemStack drop : leftover.values()) p.getWorld().dropItemNaturally(p.getLocation(), drop);
                 }
                 item.onBuy(amount);
-                // plugin.getAlertManager().checkAlerts(item.getMaterial(), item.getBuyPrice());
                 String msg = plugin.getLang().getMessage("messages.bought")
                         .replace("%amount%", String.valueOf(amount))
                         .replace("%item%", item.getMaterial().name())
@@ -260,7 +231,6 @@ public class MarketGUI implements Listener {
                 p.getInventory().removeItem(new ItemStack(item.getMaterial(), amount));
                 plugin.getEconomyManager().deposit(p.getUniqueId(), totalPrice);
                 item.onSell(amount);
-                // plugin.getAlertManager().checkAlerts(item.getMaterial(), item.getBuyPrice());
                 String msg = plugin.getLang().getMessage("messages.sold")
                         .replace("%amount%", String.valueOf(amount))
                         .replace("%item%", item.getMaterial().name())

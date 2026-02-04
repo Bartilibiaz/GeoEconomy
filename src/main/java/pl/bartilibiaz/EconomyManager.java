@@ -1,74 +1,93 @@
 package pl.bartilibiaz;
 
-import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.Bukkit;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
+import pl.bartilibiaz.database.DatabaseManager;
 
-import java.io.File;
-import java.io.IOException;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
 import java.util.UUID;
-import java.sql.ResultSet;
+import java.util.concurrent.ConcurrentHashMap;
 
-
-public class EconomyManager {
+public class EconomyManager implements Listener {
 
     private final GeoEconomyPlugin plugin;
-    private final HashMap<UUID, Double> accounts = new HashMap<>();
-    private final double startingBalance = 100.0;
+    private final Map<UUID, Double> balanceCache = new ConcurrentHashMap<>();
 
     public EconomyManager(GeoEconomyPlugin plugin) {
         this.plugin = plugin;
-        loadData(); // Wczytaj przy starcie
+        plugin.getServer().getPluginManager().registerEvents(this, plugin);
     }
 
-    public boolean hasAccount(UUID uuid) {
-        String sql = "SELECT balance FROM economy WHERE uuid = ?";
-        try (PreparedStatement ps = plugin.getDatabaseManager().getConnection().prepareStatement(sql)) {
-            ps.setString(1, uuid.toString());
-            return ps.executeQuery().next();
-        } catch (SQLException e) {
-            e.printStackTrace();
-            return false;
-        }
-    }
-
-    public void createAccount(UUID uuid) {
-        if (hasAccount(uuid)) return;
-        double startBalance = plugin.getConfig().getDouble("economy.starting_balance", 100.0);
-
-        String sql = "INSERT INTO economy (uuid, balance) VALUES (?, ?)";
-        try (PreparedStatement ps = plugin.getDatabaseManager().getConnection().prepareStatement(sql)) {
-            ps.setString(1, uuid.toString());
-            ps.setDouble(2, startBalance);
-            ps.executeUpdate();
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-    }
-
-    public double getBalance(UUID uuid) {
+    public void loadAccount(UUID uuid) {
         String sql = "SELECT balance FROM economy WHERE uuid = ?";
         try (PreparedStatement ps = plugin.getDatabaseManager().getConnection().prepareStatement(sql)) {
             ps.setString(1, uuid.toString());
             ResultSet rs = ps.executeQuery();
-            if (rs.next()) return rs.getDouble("balance");
+            if (rs.next()) {
+                balanceCache.put(uuid, rs.getDouble("balance"));
+            } else {
+                createAccount(uuid);
+            }
         } catch (SQLException e) {
             e.printStackTrace();
         }
-        return 0.0;
     }
 
-    public void setBalance(UUID uuid, double amount) {
-        if (!hasAccount(uuid)) createAccount(uuid);
+    public void saveAccount(UUID uuid) {
+        if (!balanceCache.containsKey(uuid)) return;
+        double balance = balanceCache.get(uuid);
+
         String sql = "UPDATE economy SET balance = ? WHERE uuid = ?";
         try (PreparedStatement ps = plugin.getDatabaseManager().getConnection().prepareStatement(sql)) {
-            ps.setDouble(1, amount);
+            ps.setDouble(1, balance);
             ps.setString(2, uuid.toString());
             ps.executeUpdate();
         } catch (SQLException e) {
             e.printStackTrace();
         }
+        balanceCache.remove(uuid);
+    }
+
+    public void saveAll() {
+        for (UUID uuid : new HashSet<>(balanceCache.keySet())) {
+            saveAccount(uuid);
+        }
+    }
+
+    public boolean hasAccount(UUID uuid) {
+        return balanceCache.containsKey(uuid);
+    }
+
+    public void createAccount(UUID uuid) {
+        double startBalance = plugin.getConfig().getDouble("economy.starting_balance", 100.0);
+        balanceCache.put(uuid, startBalance);
+
+        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+            String sql = "INSERT INTO economy (uuid, balance) VALUES (?, ?)";
+            try (PreparedStatement ps = plugin.getDatabaseManager().getConnection().prepareStatement(sql)) {
+                ps.setString(1, uuid.toString());
+                ps.setDouble(2, startBalance);
+                ps.executeUpdate();
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        });
+    }
+
+    public double getBalance(UUID uuid) {
+        return balanceCache.getOrDefault(uuid, 0.0);
+    }
+
+    public void setBalance(UUID uuid, double amount) {
+        balanceCache.put(uuid, amount);
     }
 
     public void deposit(UUID uuid, double amount) {
@@ -84,40 +103,17 @@ public class EconomyManager {
         return false;
     }
 
-    // --- SYSTEM ZAPISU (Persistence) ---
-
-    public void saveData() {
-        File file = new File(plugin.getDataFolder(), "balances.yml");
-        YamlConfiguration config = new YamlConfiguration();
-
-        for (UUID uuid : accounts.keySet()) {
-            config.set(uuid.toString(), accounts.get(uuid));
-        }
-
-        try {
-            config.save(file);
-        } catch (IOException e) {
-            plugin.getLogger().severe("Nie udalo sie zapisac balances.yml!");
-            e.printStackTrace();
-        }
+    @EventHandler
+    public void onJoin(PlayerJoinEvent e) {
+        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+            loadAccount(e.getPlayer().getUniqueId());
+        });
     }
 
-    public void loadData() {
-        File file = new File(plugin.getDataFolder(), "balances.yml");
-        if (!file.exists()) return;
-
-        YamlConfiguration config = YamlConfiguration.loadConfiguration(file);
-        accounts.clear();
-
-        for (String key : config.getKeys(false)) {
-            try {
-                UUID uuid = UUID.fromString(key);
-                double balance = config.getDouble(key);
-                accounts.put(uuid, balance);
-            } catch (IllegalArgumentException e) {
-                // Ignoruj błędne UUID
-            }
-        }
-        plugin.getLogger().info("Wczytano konta " + accounts.size() + " graczy.");
+    @EventHandler
+    public void onQuit(PlayerQuitEvent e) {
+        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+            saveAccount(e.getPlayer().getUniqueId());
+        });
     }
 }

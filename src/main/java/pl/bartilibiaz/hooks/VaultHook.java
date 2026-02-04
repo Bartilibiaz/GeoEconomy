@@ -1,9 +1,9 @@
-package pl.bartilibiaz.hooks; // Zmiana paczki, bo jest w folderze hooks
+package pl.bartilibiaz.hooks;
 
 import net.milkbowl.vault.economy.Economy;
 import net.milkbowl.vault.economy.EconomyResponse;
 import org.bukkit.OfflinePlayer;
-import pl.bartilibiaz.GeoEconomyPlugin; // <--- Importujemy główny plugin
+import pl.bartilibiaz.GeoEconomyPlugin;
 
 import java.util.List;
 
@@ -67,21 +67,16 @@ public class VaultHook implements Economy {
         return new EconomyResponse(amount, getBalance(player), EconomyResponse.ResponseType.SUCCESS, null);
     }
 
-    // --- NAPRAWIONE METODY ---
-
     @Override
     public boolean createPlayerAccount(OfflinePlayer player) {
         plugin.getEconomyManager().createAccount(player.getUniqueId());
-        return true; // Zwracamy true (sukces), bo tak wymaga Vault
+        return true;
     }
 
-    // Ta metoda też jest wymagana przez interfejs, nawet jeśli ignorujemy nazwę świata
     @Override
     public boolean createPlayerAccount(OfflinePlayer player, String worldName) {
         return createPlayerAccount(player);
     }
-
-    // --- METODY DEPRECATED / NIEUŻYWANE (Ale muszą być, żeby nie było błędu "abstract") ---
 
     @Override public boolean hasAccount(String playerName) { return false; }
     @Override public boolean hasAccount(String playerName, String worldName) { return false; }

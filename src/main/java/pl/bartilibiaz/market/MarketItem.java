@@ -10,9 +10,6 @@ public class MarketItem {
     private final double changePercent;
     private final double sellRatio;
 
-    // Lista cen historycznych.
-    // Ostatni element = cena sprzed 1h.
-    // Pierwszy element = cena sprzed 24h.
     private final LinkedList<Double> priceHistory = new LinkedList<>();
 
     public MarketItem(Material material, double startPrice, double changePercent, double sellRatio) {
@@ -22,30 +19,23 @@ public class MarketItem {
         this.sellRatio = sellRatio;
     }
 
-    // --- LOGIKA HISTORII ---
-
     public void addHistoryPoint() {
-        // Dodajemy obecną cenę na KONIEC listy
         priceHistory.add(price);
-        // Jeśli lista jest za długa (powyżej 24h), usuwamy najstarszy wpis (początek listy)
         if (priceHistory.size() > 24) {
             priceHistory.removeFirst();
         }
     }
 
-    // Cena sprzed 24 godzin (lub najstarsza znana)
     public double getPrice24hAgo() {
         if (priceHistory.isEmpty()) return price;
-        return priceHistory.getFirst(); // Pierwszy element = najstarszy
+        return priceHistory.getFirst();
     }
 
-    // Cena sprzed 1 godziny
     public double getPrice1hAgo() {
         if (priceHistory.isEmpty()) return price;
-        return priceHistory.getLast(); // Ostatni element = dodany godzinę temu
+        return priceHistory.getLast();
     }
 
-    // Gettery do obliczeń
     public double getChangeValue(boolean mode1h) {
         double oldPrice = mode1h ? getPrice1hAgo() : getPrice24hAgo();
         return price - oldPrice;
@@ -57,13 +47,11 @@ public class MarketItem {
         return ((price - oldPrice) / oldPrice) * 100.0;
     }
 
-    // --- RESZTA KLASY (Gettery, Settery, Transakcje) ---
-
     public Material getMaterial() { return material; }
     public double getBuyPrice() { return price; }
     public double getSellPrice() { return price * sellRatio; }
     public double getSellRatio() { return sellRatio; }
-    public double getBasePrice() { return price; } // Cena surowa do zapisu
+    public double getBasePrice() { return price; }
 
     public List<Double> getHistory() { return priceHistory; }
 

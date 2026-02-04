@@ -1,5 +1,5 @@
-bot_token: "enter your bot token here"
-guild_id: "enter your server ID here"
+bot_token: "tu wpisz id twojego bota"
+guild_id: "tu wpisz id swojego serwera"
 messages:
   link_code: "Twój kod łączenia to: **%code%**. Wyślij go w wiadomości prywatnej do naszego bota!"
   link_success: "Pomyślnie połączono konto Minecraft **%player%** z Discordem!"

@@ -26,7 +26,6 @@ public class MarketCommand implements CommandExecutor {
             return true;
         }
 
-        // /market link
         if (args[0].equalsIgnoreCase("link")) {
             if (!player.hasPermission("geoeconomy.link")) {
                 player.sendMessage("§cBrak uprawnień!");
@@ -46,7 +45,6 @@ public class MarketCommand implements CommandExecutor {
             String discordName = args[1];
             player.sendMessage("§7Szukam użytkownika §e" + discordName + "§7 na serwerze Discord...");
 
-            // Uruchamiamy asynchronicznie, żeby nie ścinać serwera przy szukaniu
             plugin.getServer().getScheduler().runTaskAsynchronously(plugin, () -> {
                 String result = plugin.getDiscordManager().sendLinkRequest(player, discordName);
 
@@ -61,7 +59,6 @@ public class MarketCommand implements CommandExecutor {
                 } else if (result.startsWith("ERR_")) {
                     player.sendMessage("§cWystąpił błąd techniczny: " + result);
                 } else {
-                    // Sukces - result to kod (np. "1234")
                     player.sendMessage(" ");
                     player.sendMessage("§8§m--------------------------------");
                     player.sendMessage("§a§lZNALEZIONO UŻYTKOWNIKA!");
@@ -77,7 +74,6 @@ public class MarketCommand implements CommandExecutor {
 
             return true;
         }
-        // /market reload
         if (args[0].equalsIgnoreCase("reload")) {
             if (!player.hasPermission("geoeconomy.admin")) {
                 player.sendMessage("§cBrak uprawnień!");
@@ -86,20 +82,13 @@ public class MarketCommand implements CommandExecutor {
 
             player.sendMessage("§7Przeładowywanie konfiguracji...");
 
-            // 1. Reload config.yml
             plugin.reloadConfig();
 
-            // 2. Reload Rynku (ceny + restart taska historii z nowym czasem)
             plugin.getMarketManager().reloadMarket();
-
-            // 3. (Opcjonalnie) Restart WWW jeśli zmienił się port
-            // To wymagałoby dodania metody restart() w WebManager,
-            // ale na razie wystarczy informacja, że zmiana portu wymaga restartu serwera.
 
             player.sendMessage("§aGeoEconomy został przeładowany!");
             return true;
         }
-        // /market alert <ITEM> <CENA>
         if (args[0].equalsIgnoreCase("alert")) {
             if (!player.hasPermission("geoeconomy.alert")) {
                 player.sendMessage("§cBrak uprawnień!");

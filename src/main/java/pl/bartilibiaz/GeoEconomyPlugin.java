@@ -14,6 +14,10 @@ import pl.bartilibiaz.market.AlertManager;
 import pl.bartilibiaz.web.WebManager;
 import pl.bartilibiaz.utils.LanguageManager;
 import pl.bartilibiaz.database.DatabaseManager;
+import pl.bartilibiaz.utils.UpdateManager;
+
+import java.io.File;
+
 public class GeoEconomyPlugin extends JavaPlugin {
 
     private EconomyManager economyManager;
@@ -25,9 +29,9 @@ public class GeoEconomyPlugin extends JavaPlugin {
     private WebManager webManager;
     private LanguageManager languageManager;
     private DatabaseManager databaseManager;
+
     @Override
     public void onEnable() {
-        // 1. Inicjalizacja Managera (Teraz sam wczyta dane w konstruktorze)
         this.economyManager = new EconomyManager(this);
         this.marketManager = new MarketManager(this);
         this.profileManager = new ProfileManager(this);
@@ -36,7 +40,6 @@ public class GeoEconomyPlugin extends JavaPlugin {
         this.databaseManager = new DatabaseManager(this);
         saveDefaultConfig();
 
-        // 2. Vault
         if (getServer().getPluginManager().getPlugin("Vault") != null) {
             this.vaultHook = new VaultHook(this);
             getServer().getServicesManager().register(Economy.class, this.vaultHook, this, ServicePriority.Highest);
@@ -45,51 +48,53 @@ public class GeoEconomyPlugin extends JavaPlugin {
             getLogger().severe("Brak pluginu Vault! Ekonomia nie będzie działać z innymi pluginami.");
         }
 
-        // 3. GUI i Komendy
         getServer().getPluginManager().registerEvents(new MarketGUI(this), this);
         getServer().getPluginManager().registerEvents(new ProfileGUI(this), this);
         if (getCommand("market") != null) {
             getCommand("market").setExecutor(new MarketCommand(this));
         }
+
         getServer().getScheduler().runTaskAsynchronously(this, () -> {
             this.discordManager = new DiscordManager(this);
         });
-        // Zadanie automatycznego zapisu co 5 minut (6000 ticków)
-        getServer().getScheduler().runTaskTimerAsynchronously(this, () -> {
-            economyManager.saveData();
 
+        getServer().getScheduler().runTaskTimerAsynchronously(this, () -> {
+            economyManager.saveAll();
         }, 6000L, 6000L);
+
         this.webManager = new WebManager(this);
         this.webManager.start();
+
+        getServer().getScheduler().runTaskLaterAsynchronously(this, () -> {
+            new UpdateManager(this).checkAndDownload();
+        }, 100L);
     }
 
     @Override
     public void onDisable() {
-        // Zapisz dane przy wyłączaniu serwera!
         if (economyManager != null) {
-            economyManager.saveData();
-            // Zapisz stan rynku i historię cen!
+            economyManager.saveAll();
+        }
         if (marketManager != null) {
-                marketManager.saveMarket();  // <--- DODAJ TO
-            }
+            marketManager.saveMarket();
+        }
         if (webManager != null) webManager.stop();
         if (discordManager != null) discordManager.stopBot();
         if (profileManager != null) profileManager.onDisable();
         if (databaseManager != null) databaseManager.close();
-        getLogger().info("Zapisano stany kont graczy.");
-        }
+
+        getLogger().info("Plugin GeoEconomy został wyłączony.");
     }
-    public LanguageManager getLang() { // Skrócony getter
-        return languageManager;
-    }
-    public DatabaseManager getDatabaseManager() {
-        return databaseManager;
-    }
-    public ProfileManager getProfileManager() {
-        return profileManager;
-    }
+
+    public LanguageManager getLang() { return languageManager; }
+    public DatabaseManager getDatabaseManager() { return databaseManager; }
+    public ProfileManager getProfileManager() { return profileManager; }
     public DiscordManager getDiscordManager() { return discordManager; }
     public AlertManager getAlertManager() { return alertManager; }
     public EconomyManager getEconomyManager() { return economyManager; }
     public MarketManager getMarketManager() { return marketManager; }
+
+    public File getPluginFile() {
+        return getFile();
+    }
 }
