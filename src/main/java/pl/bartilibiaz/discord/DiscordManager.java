@@ -6,9 +6,9 @@ import net.dv8tion.jda.api.entities.Activity;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.User;
-import net.dv8tion.jda.api.entities.channel.ChannelType; // Ważny import!
+import net.dv8tion.jda.api.entities.channel.ChannelType;
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
-import net.dv8tion.jda.api.events.message.MessageReceivedEvent; // Ważny import!
+import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
 import net.dv8tion.jda.api.interactions.commands.OptionMapping;
 import net.dv8tion.jda.api.interactions.commands.OptionType;
@@ -39,17 +39,14 @@ public class DiscordManager extends ListenerAdapter {
     private final GeoEconomyPlugin plugin;
     private JDA jda;
 
-    // Mapa kodów weryfikacyjnych
     private final Map<String, UUID> pendingCodes = new ConcurrentHashMap<>();
 
-    // Mapa cooldownów dla wysyłania zapytań
     private final Map<String, Long> requestCooldowns = new ConcurrentHashMap<>();
 
     public DiscordManager(GeoEconomyPlugin plugin) {
         this.plugin = plugin;
         startBot();
 
-        // Czyszczenie starych kodów co 5 min
         Bukkit.getScheduler().runTaskTimerAsynchronously(plugin, pendingCodes::clear, 6000L, 6000L);
     }
 
@@ -67,7 +64,6 @@ public class DiscordManager extends ListenerAdapter {
 
         try {
             jda = JDABuilder.createDefault(token)
-                    // MESSAGE_CONTENT i DIRECT_MESSAGES są kluczowe, żeby bot widział co piszesz na PW!
                     .enableIntents(GatewayIntent.DIRECT_MESSAGES, GatewayIntent.GUILD_MEMBERS, GatewayIntent.MESSAGE_CONTENT)
                     .setMemberCachePolicy(MemberCachePolicy.ALL)
                     .setChunkingFilter(ChunkingFilter.ALL)
@@ -75,7 +71,6 @@ public class DiscordManager extends ListenerAdapter {
                     .addEventListeners(this)
                     .build();
 
-            // REJESTRACJA KOMEND SLASH
             jda.updateCommands().addCommands(
                     Commands.slash("link", "Połącz swoje konto z Minecraft")
                             .addOption(OptionType.STRING, "kod", "Kod z gry (/market link)", true),
@@ -106,19 +101,14 @@ public class DiscordManager extends ListenerAdapter {
         return code;
     }
 
-    // --- NOWOŚĆ: NASŁUCHIWANIE WIADOMOŚCI PRYWATNYCH (DM) ---
-    // To jest metoda, której brakowało, a która sprawia, że bot reaguje na wpisany kod.
     @Override
     public void onMessageReceived(MessageReceivedEvent event) {
-        // Ignoruj boty
         if (event.getAuthor().isBot()) return;
 
-        // Ignoruj wiadomości z serwerów (reaguj tylko na PW / DM)
         if (!event.isFromType(ChannelType.PRIVATE)) return;
 
         String msg = event.getMessage().getContentRaw().trim();
 
-        // Sprawdź, czy wiadomość jest kodem, który mamy w bazie
         if (pendingCodes.containsKey(msg)) {
             UUID uuid = pendingCodes.remove(msg);
             String discordId = event.getAuthor().getId();
@@ -128,29 +118,23 @@ public class DiscordManager extends ListenerAdapter {
                 return;
             }
 
-            // Zapisz do bazy
             saveLinkToDb(uuid, discordId);
 
-            // Potwierdź na Discordzie
             event.getChannel().sendMessage("✅ **Sukces!** Twoje konto Minecraft zostało połączone.").queue();
 
-            // Potwierdź w grze
             Bukkit.getScheduler().runTask(plugin, () -> {
                 Player p = Bukkit.getPlayer(uuid);
                 if (p != null) {
                     p.sendMessage("§a§lSUKCES! §7Połączono z kontem: " + event.getAuthor().getName());
-                    // Usuń cooldown z wyszukiwania, bo już połączył
                     requestCooldowns.remove(discordId);
                 }
             });
         }
     }
 
-    // --- OBSŁUGA KOMEND SLASH ---
     @Override
     public void onSlashCommandInteraction(SlashCommandInteractionEvent event) {
 
-        // --- 1. KOMENDA /LINK (Alternatywa dla pisania na PW) ---
         if (event.getName().equals("link")) {
             String code = event.getOption("kod").getAsString();
             UUID playerUUID = pendingCodes.get(code);
@@ -173,7 +157,6 @@ public class DiscordManager extends ListenerAdapter {
 
             event.reply("✅ Sukces! Połączono konto z graczem **" + playerName + "**.").setEphemeral(true).queue();
 
-            // Instrukcja alertów na PW
             event.getUser().openPrivateChannel().queue(channel -> {
                 channel.sendMessage("👋 **Cześć " + event.getUser().getName() + "!**\n" +
                         "Połączono konto! Możesz teraz używać komendy `/alert` na serwerze.").queue();
@@ -186,7 +169,6 @@ public class DiscordManager extends ListenerAdapter {
             return;
         }
 
-        // --- 2. KOMENDA /ALERT ---
         if (event.getName().equals("alert")) {
             UUID uuid = getUuidByDiscordId(event.getUser().getId());
             if (uuid == null) {
@@ -203,15 +185,12 @@ public class DiscordManager extends ListenerAdapter {
                 return;
             }
 
-            // ZMIANA TUTAJ: Zamiast saveAlertToDb, używamy Twojego Managera!
-            // Dzięki temu on sam sprawdzi, czy to alert na WZROST czy SPADEK.
             plugin.getAlertManager().addAlert(uuid, mat, price);
 
             event.reply("🔔 Ustawiono alert dla **" + mat.name() + "**! Powiadomię Cię, gdy cena osiągnie **" + price + " $**.").queue();
             return;
         }
 
-        // --- 3. KOMENDA /PROFIL ---
         if (event.getName().equals("profil")) {
             User targetUser;
             OptionMapping option = event.getOption("uzytkownik");
@@ -232,8 +211,6 @@ public class DiscordManager extends ListenerAdapter {
                     "💰 Stan konta: **" + String.format("%.2f", balance) + " $**").queue();
         }
     }
-
-    // --- METODY SQL ---
 
     private void saveAlertToDb(UUID uuid, String material, double price) {
         String sql = "INSERT INTO market_alerts (uuid, material, target_price) VALUES (?, ?, ?)";
@@ -308,7 +285,6 @@ public class DiscordManager extends ListenerAdapter {
         }, error -> {});
     }
 
-    // --- AGRESYWNA METODA WYSZUKIWANIA GRACZA I WYSYŁANIA KODU NA PW ---
     public String sendLinkRequest(Player player, String discordName) {
         if (jda == null) return "ERR_NO_BOT";
 
@@ -325,11 +301,9 @@ public class DiscordManager extends ListenerAdapter {
 
         List<Member> foundMembers = new java.util.ArrayList<>();
 
-        // 1. Cache
         foundMembers.addAll(guild.getMembersByName(discordName, true));
         if (foundMembers.isEmpty()) foundMembers.addAll(guild.getMembersByNickname(discordName, true));
 
-        // 2. API (Jeśli cache pusty)
         if (foundMembers.isEmpty()) {
             try {
                 plugin.getLogger().info("DEBUG: Pytam API Discorda...");
@@ -349,7 +323,6 @@ public class DiscordManager extends ListenerAdapter {
 
         if (isDiscordAccountLinked(discordId)) return "ERR_ALREADY_LINKED";
 
-        // Cooldowny
         if (requestCooldowns.containsKey(discordId)) {
             long lastRequest = requestCooldowns.get(discordId);
             if (System.currentTimeMillis() - lastRequest < 120000) return "ERR_COOLDOWN";
@@ -359,7 +332,6 @@ public class DiscordManager extends ListenerAdapter {
         String code = String.valueOf(new Random().nextInt(9000) + 1000);
         pendingCodes.put(code, player.getUniqueId());
 
-        // Wyślij PW
         member.getUser().openPrivateChannel().queue(channel -> {
             channel.sendMessage("🔒 **Weryfikacja Konta**\n" +
                     "Gracz **" + player.getName() + "** chce połączyć to konto z serwerem Minecraft.\n" +

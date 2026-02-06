@@ -24,6 +24,7 @@ gui:
     buy_price: "&a⬇ KUPNO: &f%price% $"
     sell_price: "&c⬆ SPRZEDAŻ: &f%price% $"
     click_info:
+      - ""
       - " "
       - "&eLPM &7- Kup 1 szt."
       - "&ePPM &7- Sprzedaj 1 szt."

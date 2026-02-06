@@ -217,7 +217,11 @@ public class MarketGUI implements Listener {
                 if (!leftover.isEmpty()) {
                     for (ItemStack drop : leftover.values()) p.getWorld().dropItemNaturally(p.getLocation(), drop);
                 }
+
                 item.onBuy(amount);
+
+                plugin.getAlertManager().checkAlerts(item.getMaterial(), item.getSellPrice());
+
                 String msg = plugin.getLang().getMessage("messages.bought")
                         .replace("%amount%", String.valueOf(amount))
                         .replace("%item%", item.getMaterial().name())
@@ -230,7 +234,11 @@ public class MarketGUI implements Listener {
             if (p.getInventory().contains(item.getMaterial(), amount)) {
                 p.getInventory().removeItem(new ItemStack(item.getMaterial(), amount));
                 plugin.getEconomyManager().deposit(p.getUniqueId(), totalPrice);
+
                 item.onSell(amount);
+
+                plugin.getAlertManager().checkAlerts(item.getMaterial(), item.getSellPrice());
+
                 String msg = plugin.getLang().getMessage("messages.sold")
                         .replace("%amount%", String.valueOf(amount))
                         .replace("%item%", item.getMaterial().name())
